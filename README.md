@@ -1,4 +1,4 @@
-# credentials-vault
+# Kinko 金庫
 
 A small **localhost-only** web service that stores secret key/value entries
 encrypted at rest. Access is gated by a single master password.
@@ -39,14 +39,14 @@ encrypted at rest. Access is gated by a single master password.
 
 ## Run / manage
 
-The service runs as a systemd unit (`credentials-vault`) and is enabled to
+The service runs as a systemd unit (`kinko`) and is enabled to
 start on boot:
 
 ```bash
-sudo systemctl status  credentials-vault
-sudo systemctl start   credentials-vault
-sudo systemctl stop    credentials-vault
-sudo systemctl restart credentials-vault
+sudo systemctl status  kinko
+sudo systemctl start   kinko
+sudo systemctl stop    kinko
+sudo systemctl restart kinko
 ```
 
 Manual launch:

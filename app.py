@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-credentials-vault
-=================
+Kinko 金庫
+==========
 A small localhost-only web service that stores secret key/value entries
 encrypted at rest. Access is gated by a single master password.
 
