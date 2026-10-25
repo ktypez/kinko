@@ -1,0 +1,11 @@
+# Python
+venv/
+__pycache__/
+*.py[cod]
+.venv/
+
+# Kinko runtime data (secrets — never commit)
+data/
+*.enc
+sessions.json
+*.log
