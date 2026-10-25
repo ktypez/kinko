@@ -817,6 +817,7 @@ TEMPLATE = r"""
   .empty-state{color:var(--muted)}
   .auth{background:linear-gradient(135deg,rgba(183,148,246,.28),rgba(255,143,177,.22))}
   .auth-card .mark{background:var(--sakura);color:#1a0d16}
+  .step .num{color:rgba(183,148,246,.5)}
   .toast.err{color:var(--sakura)}
   .toast.ok{color:var(--mint)}
   .u-mark{font-family:var(--disp)}
