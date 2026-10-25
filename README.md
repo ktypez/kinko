@@ -52,10 +52,25 @@ sudo systemctl restart kinko
 Manual launch:
 
 ```bash
-./run.sh            # foreground
-./run.sh --daemon   # detached
+./run.sh              # mock vault (default for dev) — in-memory, no secrets
+VAULT_REAL=1 ./run.sh # real encrypted vault (app.py)
+./run.sh --daemon     # detached
 ./stop.sh
 ```
+
+## Dev / mock mode
+
+`~/projects/kinko` is a **dev repo**, not the live service. The live service
+runs from the deployed root `~/.local/share/kinko` via `kinko.service`
+(installed by `deploy.sh` + `install.sh`, shiori-style).
+
+For development, use the mock vault (`mock_vault.py`) instead of the real one:
+
+- `./run.sh` starts the mock on :8787 (or set `VAULT_PORT`).
+- Point tools at it: `VAULT_URL=http://127.0.0.1:<port> vaultctl list`
+- Mock behavior: any password unlocks; entries are in-memory seed data
+  (`NOUS_API_KEY`, `OPENAI_API_KEY`, `EXAMPLE_SECRET`); nothing is encrypted
+  or persisted. Same API shape as the real vault, so consumers work unchanged.
 
 Environment variables (optional):
 
