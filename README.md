@@ -1,104 +1,186 @@
-# Kinko 金庫
+<div align="center">
 
-A small **localhost-only** web service that stores secret key/value entries
-encrypted at rest. Access is gated by a single master password.
+# 🔐 Kinko 金庫
 
-> **Layout (dev vs runtime, shiori-style)**
-> - Dev/source: `~/projects/kinko/` (this git repo)
-> - Service root: `~/.local/share/kinko` (deployed via `deploy.sh`, no git)
-> - Runtime data: `~/.local/share/kinko/data/` (`credentials.enc`, `sessions.json`, `logs/`)
->
-> `deploy.sh` rsyncs the dev repo into the service root (excluding `.git`,
-> `__pycache__`, and `data`). The systemd unit `kinko.service` runs from the
-> service root with `VAULT_DATA_DIR` pointing at the data dir, so the service
-> never runs out of the dev checkout.
+**A zero-knowledge, password-gated credentials vault for your local network.**
 
-## Access
+Store API keys, tokens, and passwords encrypted at rest — AES-256-GCM,
+PBKDF2-derived keys, nothing leaves your machine.
 
-- Local:   http://127.0.0.1:8787
-- LAN:     http://192.168.1.47:8787   (this machine's wlan0 IP)
-- Tailscale (recommended for remote devices): http://100.122.103.62:8787
+*Self-hosted · No accounts · No telemetry · One small Flask app*
 
-## Security
+</div>
 
-- Master password is **never stored**. Only a PBKDF2 salt and an encrypted
-  verifier blob are kept on disk (`vault.json`).
-- Key derivation: PBKDF2-HMAC-SHA256, 600,000 iterations -> 32-byte key.
-- Encryption: AES-256-GCM with a fresh random 12-byte nonce per value.
-- The derived key lives only in server RAM during an unlocked session.
-  Restarting the service wipes sessions -> you must re-unlock.
-- Brute-force protection: increasing delay after repeated wrong passwords.
-- All mutations require a CSRF token.
-- `credentials.enc` is written with mode `0600`.
+---
 
-> ⚠️ **LAN exposure**: the service binds to `0.0.0.0` and speaks plain HTTP, so
-> the master password and session cookie travel in cleartext. Anyone on the same
-> network (192.168.1.0/24) can sniff them. For remote access use the Tailscale
-> address (100.122.103.62) or put it behind a TLS reverse proxy. To restrict to
-> localhost only, set `VAULT_HOST=127.0.0.1` and restart the service.
+## Why Kinko?
 
-## Run / manage
+You have secrets scattered across `.env` files, shell history, and browser
+password managers. Cloud secret managers need accounts, billing, and trust in
+someone else's infrastructure. **Kinko is the opposite:** a single Python file
+that runs on your own box, encrypts everything with a key derived only from
+your master password, and serves it through a clean web UI plus a tiny CLI.
 
-The service runs as a systemd unit (`kinko`) and is enabled to
-start on boot:
+- **Zero-knowledge by design** — the server never sees or stores your master
+  password. Only a PBKDF2 salt and an encrypted verifier live on disk.
+- **Encrypted at rest** — every value is sealed with AES-256-GCM using a fresh
+  random nonce; the store file is useless without the password.
+- **Session-scoped keys** — the derived key exists only in RAM while unlocked.
+  Restarting the service wipes every session.
+- **Two ways to use it** — a polished anime-styled web UI for humans, and
+  `vaultctl` (or plain HTTP) for scripts and agents.
+- **Dev-friendly** — ships with a mock server so you can build against the
+  same API without touching real secrets.
 
-```bash
-sudo systemctl status  kinko
-sudo systemctl start   kinko
-sudo systemctl stop    kinko
-sudo systemctl restart kinko
+## How it works
+
+```
+master password ──▶ PBKDF2-HMAC-SHA256 (600k iterations) ──▶ 32-byte key
+key + value      ──▶ AES-256-GCM (random 12-byte nonce)   ──▶ credentials.enc (0600)
 ```
 
-Manual launch:
+| Property        | Detail                                              |
+| --------------- | --------------------------------------------------- |
+| Key derivation  | PBKDF2-HMAC-SHA256, 600,000 iterations              |
+| Encryption      | AES-256-GCM, per-value random nonce                 |
+| Auth            | Single master password, never stored                |
+| Sessions        | HttpOnly cookie + CSRF token, 30-min idle expiry    |
+| Brute force     | Exponentially increasing delay after wrong attempts |
+| Dependencies    | Python 3 + Flask + cryptography                     |
+
+## Quick start
+
+### Web UI
 
 ```bash
-./run.sh              # mock vault (default for dev) — in-memory, no secrets
-VAULT_REAL=1 ./run.sh # real encrypted vault (app.py)
-./run.sh --daemon     # detached
-./stop.sh
+./run.sh --daemon          # starts the vault on http://127.0.0.1:8787
 ```
 
-## Dev / mock mode
+Open the browser, set a master password (≥ 8 chars), add entries. Done.
 
-`~/projects/kinko` is a **dev repo**, not the live service. The live service
-runs from the deployed root `~/.local/share/kinko` via `kinko.service`
-(installed by `deploy.sh` + `install.sh`, shiori-style).
+> ⚠️ If you lose the master password, the data is unrecoverable. That's not a
+> bug — it's the threat model.
 
-For development, use the mock vault (`mock_vault.py`) instead of the real one:
+### CLI (`vaultctl`)
 
-- `./run.sh` starts the mock on :8787 (or set `VAULT_PORT`).
-- Point tools at it: `VAULT_URL=http://127.0.0.1:<port> vaultctl list`
-- Mock behavior: any password unlocks; entries are in-memory seed data
-  (`NOUS_API_KEY`, `OPENAI_API_KEY`, `EXAMPLE_SECRET`); nothing is encrypted
-  or persisted. Same API shape as the real vault, so consumers work unchanged.
+```bash
+vaultctl list                      # all entry names
+vaultctl get NOUS_API_KEY          # print a secret to stdout
+vaultctl set MY_TOKEN "abc123"     # create/update
+vaultctl delete MY_TOKEN           # remove
+vaultctl status                    # initialized / unlocked?
+vaultctl lock                      # wipe the session
+```
 
-Environment variables (optional):
+Point tools at any vault instance with `VAULT_URL`:
 
-- `VAULT_HOST` (default `127.0.0.1`)
-- `VAULT_PORT` (default `8787`)
-- `VAULT_SESSION_TTL` (seconds, default `1800`)
-- `VAULT_ITERATIONS` (default `600000`)
+```bash
+NOUS_KEY=$(VAULT_URL=http://127.0.0.1:8787 vaultctl get NOUS_API_KEY)
+```
 
-## First use
+### HTTP API
 
-1. Open http://127.0.0.1:8787
-2. You will be asked to create a master password (>= 8 chars).
-   **If you lose it, the encrypted data cannot be recovered.**
-3. Add entries (name -> value), reveal/copy/delete as needed.
-4. Lock when done (or just close the tab; sessions expire after 30 min).
+Base URL `http://127.0.0.1:8787`. Mutations require `X-CSRF-Token` (returned
+by `/api/unlock`).
 
-## Files
+| Endpoint                   | Method       | Purpose             |
+| -------------------------- | ------------ | ------------------- |
+| `/api/status`              | GET          | init / unlock state |
+| `/api/setup`               | POST         | first-time password |
+| `/api/unlock`              | POST         | open session + CSRF |
+| `/api/lock`                | POST         | close session       |
+| `/api/entries`             | GET          | list names          |
+| `/api/entries/<name>`      | GET          | read one value      |
+| `/api/entries`             | POST         | create / update     |
+| `/api/entries/<name>`      | DELETE       | remove one          |
+| `/api/change-password`     | POST         | rotate master pw    |
 
-- `~/projects/kinko/` - dev git repo (source)
-- `~/.local/share/kinko/` - service root (deployed, no git)
-- `~/.local/share/kinko/data/credentials.enc` - encrypted store (runtime data, 0600)
-- `~/.local/share/kinko/data/sessions.json` - session cache (runtime data, 0600)
-- `~/.local/share/kinko/data/logs/vault.log` - service log
+## Development & mock mode
 
-## Backup
+This repository is the **dev tree**, not the live service. To develop against
+the vault without ever touching real secrets, run the built-in mock:
 
-Back up `vault.json` (it is encrypted, safe to copy). To restore, drop it
-back into this directory and restart the service.
-EOF
-echo "readme written"
-rm -rf /home/admin/credentials/__pycache__
+```bash
+./run.sh                     # mock vault (default) — in-memory, any password unlocks
+VAULT_PORT=9787 ./run.sh     # mock on another port
+VAULT_REAL=1 ./run.sh        # run the real encrypted vault instead
+```
+
+The mock (`mock_vault.py`) implements the exact same HTTP surface with seeded
+fake entries — swap `VAULT_URL` and your consumers keep working.
+
+## Configuration
+
+All optional, via environment variables:
+
+| Variable             | Default      | Meaning                          |
+| -------------------- | ------------ | -------------------------------- |
+| `VAULT_HOST`         | `127.0.0.1`  | bind address                     |
+| `VAULT_PORT`         | `8787`       | port                             |
+| `VAULT_SESSION_TTL`  | `1800`       | session idle timeout (seconds)   |
+| `VAULT_ITERATIONS`   | `600000`     | PBKDF2 rounds                    |
+| `VAULT_DATA_DIR`     | *(app dir)*  | where `credentials.enc` lives    |
+
+## Deployment (systemd)
+
+Kinko separates **source** from **runtime**: edit this repo, deploy a clean
+copy to a service root, and let systemd manage it.
+
+```bash
+./deploy.sh                  # rsyncs source → ~/.local/share/kinko (excl. .git, venv cache, data)
+sudo systemctl restart kinko # then manage as usual
+```
+
+The installed unit runs from the service root with `VAULT_DATA_DIR` pointed at
+its own `data/` directory, so the production service never executes out of a
+dev checkout.
+
+```bash
+sudo systemctl status kinko
+sudo systemctl stop kinko
+journalctl -u kinko -f
+```
+
+## Security notes
+
+- **Plain HTTP.** The default deployment speaks cleartext. On a trusted LAN
+  that's often fine; anywhere else, front it with a TLS reverse proxy or reach
+  it over Tailscale/VPN. Bind to `127.0.0.1` if you don't need LAN access.
+- **File permissions.** `credentials.enc` and `sessions.json` are written
+  `0600`; keep them that way.
+- **Backups.** `credentials.enc` is fully encrypted — safe to copy into any
+  backup system. Restore = drop the file back and restart. Lose both the file
+  *and* the password and there is no recovery path.
+- **Sessions are in-memory.** A service restart logs everyone out by design.
+
+## Repository layout
+
+```
+kinko/
+├── app.py              # the vault: Flask service + embedded UI (~1,300 lines)
+├── mock_vault.py       # dev-only mock, identical API shape
+├── run.sh / stop.sh    # manual launchers (mock by default)
+├── deploy.sh           # source → service-root sync
+├── install.sh          # installs the systemd unit
+└── systemd/
+    └── kinko.service   # production unit template
+```
+
+## FAQ
+
+**Can I recover a forgotten master password?**
+No. Zero-knowledge means no backdoor, no reset email, no support ticket.
+
+**Is the web UI required?**
+No — `vaultctl` and the HTTP API cover everything headlessly.
+
+**What happens if someone steals `credentials.enc`?**
+They face 600k PBKDF2 iterations per guess, offline, with nothing else to
+leak. Use a strong password and sleep well.
+
+**Why "Kinko"?**
+金庫 (*kinko*) — Japanese for "safe/vault." The UI matches the vibe. 🌸
+
+## License
+
+MIT
