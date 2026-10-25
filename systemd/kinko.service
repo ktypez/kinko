@@ -1,0 +1,20 @@
+[Unit]
+Description=Kinko 金庫 (credentials vault)
+After=network.target
+
+[Service]
+Type=simple
+User=admin
+Group=admin
+WorkingDirectory=/home/admin/.local/share/kinko
+Environment="VAULT_HOST=0.0.0.0"
+Environment="VAULT_PORT=8787"
+Environment="VAULT_DATA_DIR=/home/admin/.local/share/kinko/data"
+ExecStart=/home/admin/.local/share/kinko/venv/bin/python /home/admin/.local/share/kinko/app.py
+Restart=on-failure
+RestartSec=3
+StandardOutput=append:/home/admin/.local/share/kinko/data/logs/vault.log
+StandardError=append:/home/admin/.local/share/kinko/data/logs/vault.log
+
+[Install]
+WantedBy=multi-user.target

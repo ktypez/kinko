@@ -517,53 +517,70 @@ TEMPLATE = r"""
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="color-scheme" content="light dark">
-<title>credentials vault</title>
+<meta name="color-scheme" content="dark">
+<title>Kinko 金庫</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=M+PLUS+Rounded+1c:wght@500;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --blue:#1557F5;
-    --cream:#FFFBEA;
-    --yellow:#FFF3A6;
-    --paleblue:#BDE7FA;
-    --lilac:#EACCF5;
-    --pink:#F9C8D8;
-    --ink:#111111;
+    --bg:#0c0e24;
+    --bg2:#15183a;
+    --panel:rgba(255,255,255,.04);
+    --panel-line:rgba(255,150,190,.28);
+    --sakura:#ff8fb1;
+    --sakura-soft:#ffa6c9;
+    --lilac:#b794f6;
+    --gold:#ffd9a0;
+    --mint:#7fe3d0;
+    --ink:#e8e9ff;
+    --muted:#a9adcf;
     --white:#ffffff;
-    --ey:#FFD400;
-    --cyan:#12A9E8;
-    --rose:#E94B85;
-    --green:#64D982;
-    --lav:#C9A7F0;
-    --shadow:6px 6px 0 var(--ink);
-    --shadow-sm:3px 3px 0 var(--ink);
-    --radius:2px;
+    --glow:0 0 24px rgba(255,143,177,.35);
+    --glow-soft:0 0 14px rgba(183,148,246,.3);
+    --radius:14px;
+    --radius-sm:9px;
     --mono:'JetBrains Mono',ui-monospace,monospace;
-    --disp:'Archivo',sans-serif;
-    --body:'Inter',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    --disp:'M PLUS Rounded 1c','Noto Sans JP',sans-serif;
+    --body:'Noto Sans JP','M PLUS Rounded 1c',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{height:100%}
   body{
-    font-family:var(--body);color:var(--ink);background:#fff;
-    -webkit-font-smoothing:antialiased;line-height:1.4;overflow-x:hidden;
+    font-family:var(--body);color:var(--ink);
+    background:radial-gradient(1200px 700px at 80% -10%, rgba(255,143,177,.22), transparent 60%),
+               radial-gradient(1000px 600px at 0% 100%, rgba(183,148,246,.20), transparent 55%),
+               linear-gradient(160deg,#0c0e24 0%,#15183a 55%,#10132e 100%);
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;line-height:1.5;overflow-x:hidden;
   }
-  ::selection{background:var(--ey);color:var(--ink)}
+  ::selection{background:var(--sakura);color:#1a0d16}
 
-  /* graph paper grid */
+  /* starfield */
   .grid{
     background-image:
-      linear-gradient(to right, rgba(17,17,17,.07) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(17,17,17,.07) 1px, transparent 1px);
-    background-size:26px 26px;
+      radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,.5), transparent),
+      radial-gradient(1px 1px at 70% 60%, rgba(255,255,255,.4), transparent),
+      radial-gradient(1px 1px at 40% 80%, rgba(255,255,255,.35), transparent),
+      radial-gradient(1.5px 1.5px at 85% 20%, rgba(255,166,201,.6), transparent);
+    background-size:400px 400px;
   }
-  .grid-blue{
-    background-image:
-      linear-gradient(to right, rgba(255,255,255,.08) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(255,255,255,.08) 1px, transparent 1px);
-    background-size:26px 26px;
+  .grid-blue{background:var(--panel)}
+
+  /* legacy var aliases → anime palette (keeps old class rules working) */
+  :root{
+    --shadow:0 8px 30px rgba(0,0,0,.5);
+    --shadow-sm:0 4px 16px rgba(0,0,0,.42);
+    --ey:var(--sakura);
+    --blue:var(--lilac);
+    --cream:rgba(255,255,255,.05);
+    --yellow:var(--gold);
+    --pink:var(--sakura-soft);
+    --paleblue:var(--lilac);
+    --cyan:var(--mint);
+    --rose:var(--sakura);
+    --green:var(--mint);
+    --lav:var(--lilac);
   }
 
   /* utility header */
@@ -755,6 +772,55 @@ TEMPLATE = r"""
   .auth-card .btn{width:100%}
   .err-msg{color:var(--rose);font-family:var(--mono);font-size:12px;margin-top:14px;padding:10px 12px;border:2px solid var(--rose);background:rgba(233,75,133,.06)}
 
+  /* anime surface repaint — overrides the legacy neo-brutalist rules above */
+  header.utility{background:rgba(12,14,36,.82);backdrop-filter:blur(10px);border-bottom-color:var(--panel-line)}
+  .u-mark{background:var(--sakura);box-shadow:var(--glow);color:#1a0d16}
+  .u-name{color:var(--sakura-soft)}
+  .u-link{border-color:var(--panel-line);background:rgba(255,255,255,.04);color:var(--ink)}
+  .status-pill{border-color:var(--panel-line);background:rgba(255,255,255,.04);color:var(--ink)}
+  .status-dot{border-color:var(--panel-line)}
+  .hero{background:linear-gradient(135deg,rgba(183,148,246,.35),rgba(255,143,177,.3));border-bottom-color:var(--panel-line)}
+  .hero h1{color:#fff}
+  .hero h1 em{color:var(--gold)}
+  .hero .copy{color:rgba(255,255,255,.92)}
+  .hero-collage .panel{background:rgba(255,255,255,.08);border-color:var(--panel-line);box-shadow:var(--glow-soft)}
+  .hero-collage .panel .wbar{background:rgba(255,143,177,.18);border-bottom-color:var(--panel-line)}
+  .ticker{background:rgba(10,12,30,.7);border-color:var(--panel-line)}
+  .ticker .track{color:var(--ink)}
+  .bordered,.vault-panel,.vault-head,.entry,.sys-card,.uc,.step,.auth-card,.foot-card,.input,.icon-btn,.modal-card,.toast,.foot-card{border-color:var(--panel-line);background:rgba(255,255,255,.05)}
+  .vault-head{background:rgba(255,255,255,.05)}
+  .entry-val{color:var(--muted)}
+  .entry-val.revealed{color:var(--ink)}
+  .btn{border-color:var(--panel-line);color:var(--ink);box-shadow:var(--glow-soft);border-radius:var(--radius-sm)}
+  .btn.cta{background:var(--sakura);color:#1a0d16;box-shadow:var(--glow)}
+  .btn.blue{background:var(--lilac);color:#1a0d16}
+  .btn.rose{background:var(--sakura);color:#1a0d16}
+  .btn.green{background:var(--mint);color:#06231c}
+  .btn.danger{color:var(--sakura);border-color:var(--sakura);background:rgba(255,143,177,.08)}
+  .icon-btn{box-shadow:none}
+  .icon-btn:hover{box-shadow:var(--glow-soft)}
+  .input{box-shadow:none}
+  .input:focus{transform:translateY(-1px);box-shadow:var(--glow-soft)}
+  .input::placeholder{color:var(--muted)}
+  .pw-toggle{border-color:var(--panel-line);color:var(--ink)}
+  .pw-toggle:hover{background:var(--sakura);color:#1a0d16}
+  .remember input{accent-color:var(--sakura)}
+  .err-msg{border-color:var(--sakura);background:rgba(255,143,177,.1);color:var(--sakura-soft)}
+  .modal-backdrop{background:rgba(6,8,20,.7)}
+  .sys-card.mid{background:rgba(255,143,177,.14)}
+  .conv{background:linear-gradient(135deg,rgba(183,148,246,.3),rgba(255,143,177,.28));border-color:var(--panel-line)}
+  .conv h2{color:#fff}
+  .conv h2 .b{color:var(--gold)}
+  .foot{background:rgba(10,12,30,.5)}
+  .foot-legal{border-top-color:var(--panel-line)}
+  .foot-card a{color:var(--ink)}
+  .empty-state{color:var(--muted)}
+  .auth{background:linear-gradient(135deg,rgba(183,148,246,.28),rgba(255,143,177,.22))}
+  .auth-card .mark{background:var(--sakura);color:#1a0d16}
+  .toast.err{color:var(--sakura)}
+  .toast.ok{color:var(--mint)}
+  .u-mark{font-family:var(--disp)}
+
   .hidden{display:none !important}
   .center{text-align:center}
   .muted{opacity:.65}
@@ -767,7 +833,7 @@ TEMPLATE = r"""
   <div class="u-inner">
     <div class="u-brand">
       <span class="u-mark">🔐</span>
-      <span class="u-name">credentials vault</span>
+      <span class="u-name">Kinko 金庫</span>
     </div>
     <div class="u-right">
       <div id="stateBadge" class="status-pill">
@@ -935,7 +1001,7 @@ TEMPLATE = r"""
       <div class="foot-card">
         <div class="foot-grid">
           <div>
-            <h4>🔐 credentials vault</h4>
+            <h4>🔐 Kinko 金庫</h4>
             <p>A local, zero-knowledge secret store for the lab. AES-256-GCM at rest, PBKDF2-derived, localhost-only by default.</p>
             <a class="btn sm blue" href="/">↑ Back to top</a>
           </div>
@@ -957,7 +1023,7 @@ TEMPLATE = r"""
           </div>
         </div>
         <div class="foot-legal">
-          <span>© 2026 credentials vault · localhost:8787</span>
+          <span>© 2026 Kinko 金庫 · localhost:8787</span>
           <span>master key never leaves the server</span>
         </div>
       </div>
@@ -1220,5 +1286,5 @@ $("changePwBtn").onclick = async () => {
 _load_sessions()
 
 if __name__ == "__main__":
-    print(f"credentials-vault on http://{HOST}:{PORT}  (vault: {VAULT_PATH})")
+    print(f"Kinko 金庫 on http://{HOST}:{PORT}  (vault: {VAULT_PATH})")
     app.run(host=HOST, port=PORT, debug=False, threaded=True)

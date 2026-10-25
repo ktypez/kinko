@@ -3,13 +3,15 @@
 A small **localhost-only** web service that stores secret key/value entries
 encrypted at rest. Access is gated by a single master password.
 
-> **Layout (dev vs runtime split)**
-> - Dev/source: `~/projects/credentials-vault/` (this directory)
-> - Runtime data: `~/credentials/` (`credentials.enc`, `sessions.json`, `logs/`)
+> **Layout (dev vs runtime, shiori-style)**
+> - Dev/source: `~/projects/kinko/` (this git repo)
+> - Service root: `~/.local/share/kinko` (deployed via `deploy.sh`, no git)
+> - Runtime data: `~/.local/share/kinko/data/` (`credentials.enc`, `sessions.json`, `logs/`)
 >
-> The systemd unit runs from the runtime dir (`WorkingDirectory=~/credentials`,
-> `VAULT_DATA_DIR=~/credentials`) but executes the source from the dev tree, so
-> the service never runs out of the dev checkout.
+> `deploy.sh` rsyncs the dev repo into the service root (excluding `.git`,
+> `__pycache__`, and `data`). The systemd unit `kinko.service` runs from the
+> service root with `VAULT_DATA_DIR` pointing at the data dir, so the service
+> never runs out of the dev checkout.
 
 ## Access
 
@@ -72,13 +74,11 @@ Environment variables (optional):
 
 ## Files
 
-- `app.py`       - Flask service (source, dev tree)
-- `run.sh` / `stop.sh` - manual launchers (dev tree)
-- `venv/`        - Python virtualenv (Flask + cryptography, dev tree)
-- `systemd/`     - systemd unit template + install-service.sh
-- `~/credentials/credentials.enc` - encrypted store (runtime data, 0600)
-- `~/credentials/sessions.json`   - in-memory session cache (runtime data, 0600)
-- `~/credentials/logs/vault.log`  - service log (runtime data)
+- `~/projects/kinko/` - dev git repo (source)
+- `~/.local/share/kinko/` - service root (deployed, no git)
+- `~/.local/share/kinko/data/credentials.enc` - encrypted store (runtime data, 0600)
+- `~/.local/share/kinko/data/sessions.json` - session cache (runtime data, 0600)
+- `~/.local/share/kinko/data/logs/vault.log` - service log
 
 ## Backup
 
