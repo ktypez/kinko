@@ -558,6 +558,7 @@ TEMPLATE = r"""
     background-image:
       radial-gradient(900px 600px at 15% 0%, rgba(196,58,47,.07), transparent 60%),
       radial-gradient(700px 500px at 100% 100%, rgba(196,58,47,.05), transparent 55%);
+    background-attachment: fixed;
     min-height:100vh;
     -webkit-font-smoothing:antialiased;line-height:1.6;overflow-x:hidden;
     animation:pageFade .6s ease both;
@@ -572,7 +573,8 @@ TEMPLATE = r"""
     backdrop-filter:blur(14px) saturate(1.2);
     border-bottom:1px solid var(--line);
   }
-  .u-inner{max-width:1200px;margin:0 auto;padding:14px 28px;display:flex;align-items:center;gap:16px}
+  .u-inner{max-width:1200px;margin:0 auto;padding:16px 28px;display:flex;align-items:center;gap:16px}
+  .u-subnav{max-width:1200px;margin:0 auto;padding:10px 28px 14px;display:flex;align-items:center;gap:12px;border-top:1px solid var(--line)}
   .u-brand{display:flex;align-items:center;gap:12px}
   .u-mark{width:34px;height:34px;border-radius:var(--radius-xs);object-fit:contain;filter:drop-shadow(0 2px 6px rgba(196,58,47,.25))}
   .u-name{font-family:var(--serif);font-weight:700;font-size:20px;letter-spacing:.01em;color:var(--ink)}
@@ -772,15 +774,15 @@ TEMPLATE = r"""
       <img class="u-mark" src="{{ logo }}" alt="Kinko">
       <span class="u-name">Kinko 金庫</span>
     </div>
-    <div class="u-right">
-      <div id="stateBadge" class="status-pill">
-        <span class="status-dot"></span>
-        <span id="stateText">—</span>
-      </div>
-      <a id="settingsLink" href="/settings" class="u-link hidden">Settings</a>
-      <button id="lockBtn" class="u-link hidden">Lock</button>
-    </div>
   </div>
+  <nav class="u-subnav">
+    <div id="stateBadge" class="status-pill">
+      <span class="status-dot"></span>
+      <span id="stateText">—</span>
+    </div>
+    <a id="settingsLink" href="/settings" class="u-link hidden">Settings</a>
+    <button id="lockBtn" class="u-link hidden">Lock</button>
+  </nav>
 </header>
 
 <!-- SETUP -->
@@ -834,22 +836,6 @@ TEMPLATE = r"""
 <!-- VAULT (landing) -->
 <section id="vaultView" class="view">
 
-  <!-- HERO -->
-  <div class="hero grid-blue">
-    <div class="hero-illust">
-      <img src="{{ hero }}" alt="Kinko vault illustration">
-    </div>
-    <div class="hero-inner">
-      <div class="eyebrow">ENCRYPTED · LOCAL · ZERO-KNOWLEDGE</div>
-      <h1 class="display">Your secrets,<br><em>encrypted</em> &amp; local.</h1>
-      <p class="copy">A password-gated vault for lab credentials. AES-256-GCM at rest, PBKDF2-derived key, localhost-only. Nothing leaves your machine.</p>
-      <div class="hero-cta">
-        <button class="btn cta" id="openAddModalBtn">＋ Add entry</button>
-        <a class="btn ghost" href="/settings">⚙ Settings</a>
-      </div>
-    </div>
-  </div>
-
   <!-- TICKER -->
   <div class="ticker">
     <div class="track">
@@ -878,29 +864,6 @@ TEMPLATE = r"""
         <div class="ico">🔐</div>
         <p>No entries yet. Click "Add entry" to create your first one.</p>
       </div>
-    </div>
-  </div>
-
-  <!-- WORKFLOW -->
-  <div class="plate grid" style="background:var(--yellow)">
-    <div class="plate-head">
-      <div class="eyebrow">HOW IT WORKS</div>
-      <h2 class="section-title">Three steps, zero friction.</h2>
-    </div>
-    <div class="steps">
-      <div class="step"><div class="num">1</div><h3>Unlock</h3><p>Enter your master password. The derived key lives only in server memory for the session.</p></div>
-      <div class="step"><div class="num">2</div><h3>Store</h3><p>Add a named entry. The value is encrypted with AES-256-GCM before it touches disk.</p></div>
-      <div class="step"><div class="num">3</div><h3>Retrieve</h3><p>Reveal, copy, or delete anytime. Reveal-on-demand keeps secrets off the wire.</p></div>
-    </div>
-    <div class="dashed-note">— sessions persist across restarts; use "Remember me" to stay signed in for 30 days —</div>
-  </div>
-
-
-  <!-- CONVERSION BANNER -->
-  <div class="conv">
-    <div class="conv-inner">
-      <h2>Stop pasting secrets<br>into <span class="y">plaintext</span>. <span class="b">Start vaulting.</span></h2>
-      <button class="btn blue" id="openAddModalBtn3">＋ Add your first entry</button>
     </div>
   </div>
 
@@ -1149,9 +1112,9 @@ $("lockBtn").onclick = async () => {
 
 function openAddModal(){ $("addModal").classList.remove("hidden"); setTimeout(()=>{ $("newName").focus(); }, 50); }
 function closeAddModal(){ $("addModal").classList.add("hidden"); $("newName").value=""; $("newValue").value=""; }
-$("openAddModalBtn").onclick = openAddModal;
-$("openAddModalBtn2").onclick = openAddModal;
-$("openAddModalBtn3").onclick = openAddModal;
+const b1 = $("openAddModalBtn"); if (b1) b1.onclick = openAddModal;
+const b2 = $("openAddModalBtn2"); if (b2) b2.onclick = openAddModal;
+const b3 = $("openAddModalBtn3"); if (b3) b3.onclick = openAddModal;
 $("closeAddModalBtn").onclick = closeAddModal;
 $("cancelAddBtn").onclick = closeAddModal;
 $("addModalBackdrop").onclick = closeAddModal;
