@@ -1,5 +1,7 @@
 <div align="center">
 
+<p align="center"><img src="assets/logo.png" width="96" alt="Kinko 金庫"></p>
+
 # 🔐 Kinko 金庫
 
 **A zero-knowledge, password-gated credentials vault for your local network.**
