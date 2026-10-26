@@ -652,6 +652,8 @@ TEMPLATE = r"""
   .vault-head{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:22px 28px;border-bottom:1px solid var(--line);background:var(--bg2);flex-wrap:wrap}
   .vault-head .title{font-family:var(--serif);font-weight:700;font-size:20px;letter-spacing:-.01em}
   .vault-head .sub{font-family:var(--mono);font-size:11px;color:var(--muted)}
+  .search-wrap{flex:1;min-width:200px;max-width:360px}
+  .search-wrap .input{padding:9px 14px;font-size:13px}
   .entries{display:flex;flex-direction:column}
   .entry{display:grid;grid-template-columns:1fr auto;gap:14px;align-items:center;padding:20px 28px;border-bottom:1px solid var(--line-soft);transition:background .2s ease;animation:fadeUp .4s ease both}
   .entry:last-child{border-bottom:none}
@@ -857,6 +859,9 @@ TEMPLATE = r"""
           <div class="title">Entries</div>
           <div class="sub" id="entryCount">—</div>
         </div>
+        <div class="search-wrap">
+          <input type="text" id="searchInput" class="input" placeholder="search entries…" autocomplete="off">
+        </div>
         <button class="btn cta sm" id="openAddModalBtn2">＋ Add entry</button>
       </div>
       <div id="entriesBody" class="entries"></div>
@@ -1019,17 +1024,29 @@ function renderViews(){
   setStateBadge();
 }
 
-async function refreshEntries(){
-  const res = await api("/api/entries");
+const allNames = [];
+let searchQuery = "";
+
+function matchesSearch(name){
+  if (!searchQuery) return true;
+  const q = searchQuery.toLowerCase();
+  if (name.toLowerCase().includes(q)) return true;
+  if (revealed.has(name) && (values[name]||"").toLowerCase().includes(q)) return true;
+  return false;
+}
+
+function renderEntries(){
   const body = $("entriesBody"); body.innerHTML = "";
-  const names = (res.data && res.data.entries) || [];
-  $("emptyState").classList.toggle("hidden", names.length>0);
-  $("entryCount").textContent = names.length + " entr" + (names.length===1?"y":"ies");
-  for (const name of names){
+  const filtered = allNames.filter(matchesSearch);
+  $("emptyState").classList.toggle("hidden", allNames.length>0);
+  const total = allNames.length;
+  const shown = filtered.length;
+  $("entryCount").textContent = (searchQuery ? shown + " of " + total : total) + " entr" + (total===1?"y":"ies");
+  filtered.forEach((name, i) => {
     const isRev = revealed.has(name);
     const row = document.createElement("div");
     row.className = "entry";
-    row.style.animationDelay = (names.indexOf(name) * 45) + "ms";
+    row.style.animationDelay = (i * 45) + "ms";
     const top = document.createElement("div"); top.className = "entry-top";
     const key = document.createElement("div"); key.className="entry-key"; key.textContent = name;
     top.append(key);
@@ -1043,9 +1060,9 @@ async function refreshEntries(){
     revBtn.className = "icon-btn"; revBtn.title = isRev ? "hide" : "reveal";
     revBtn.innerHTML = isRev ? "🙈" : "👁";
     revBtn.onclick = async () => {
-      if (revealed.has(name)){ revealed.delete(name); refreshEntries(); return; }
+      if (revealed.has(name)){ revealed.delete(name); renderEntries(); return; }
       const v = await api("/api/entries/"+encodeURIComponent(name));
-      if (v.ok){ values[name] = v.data.value; revealed.add(name); refreshEntries(); }
+      if (v.ok){ values[name] = v.data.value; revealed.add(name); renderEntries(); }
       else toast((v.data&&v.data.error)||"error","err");
     };
 
@@ -1070,7 +1087,20 @@ async function refreshEntries(){
     bottom.append(val, actions);
     row.append(top, bottom);
     body.append(row);
+  });
+  if (allNames.length===0 || (searchQuery && filtered.length===0)){
+    $("emptyState").classList.remove("hidden");
+    if (searchQuery && filtered.length===0) $("emptyState").querySelector("p").textContent = "No entries match \"" + searchQuery + "\".";
+    else $("emptyState").querySelector("p").textContent = "No entries yet. Click \"Add entry\" to create your first one.";
+  } else {
+    $("emptyState").classList.add("hidden");
   }
+}
+
+async function refreshEntries(){
+  const res = await api("/api/entries");
+  allNames = (res.data && res.data.entries) || [];
+  renderEntries();
 }
 
 document.querySelectorAll(".pw-toggle").forEach(btn => {
@@ -1082,6 +1112,12 @@ document.querySelectorAll(".pw-toggle").forEach(btn => {
     btn.textContent = show ? "hide" : "show";
   });
 });
+
+const searchInput = $("searchInput");
+if (searchInput){
+  searchInput.addEventListener("input", (e) => { searchQuery = e.target.value.trim(); renderEntries(); });
+  searchInput.addEventListener("keydown", (e) => { if (e.key === "Escape"){ searchInput.value=""; searchQuery=""; renderEntries(); } });
+}
 
 $("setupBtn").onclick = async () => {
   const pw = $("setupPw").value, pw2 = $("setupPw2").value;
