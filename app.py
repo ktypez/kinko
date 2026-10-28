@@ -59,6 +59,8 @@ SESSION_TTL = int(os.environ.get("VAULT_SESSION_TTL", str(30 * 60)))  # seconds
 REMEMBER_TTL = int(os.environ.get("VAULT_REMEMBER_TTL", str(30 * 24 * 60 * 60)))  # 30 days
 COOKIE_NAME = "sid"
 SESSIONS_FILE = os.path.join(DATA_DIR, "sessions.json")
+AUDIT_PATH = os.path.join(DATA_DIR, "audit.jsonl")
+AUDIT_MAX_READ = 1000
 
 # Brand assets (generated via E2B + Pillow; see assets/). Embedded as
 # data URIs so the single-file app stays self-contained.
@@ -279,9 +281,72 @@ def _record_success():
         _fail["reset_at"] = 0.0
 
 
-# --------------------------------------------------------------------------- #
+# ---------------------------------------------------------------------------
+# Audit logging (JSONL, never values)
+# ---------------------------------------------------------------------------
+def audit(action: str, name: str, decision: str, reason: str, detail=None) -> None:
+    """Append one JSONL audit record. Never stores secret values."""
+    try:
+        rec = {
+            "ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "action": action,
+            "name": name,
+            "decision": decision,
+            "reason": reason,
+        }
+        if detail:
+            rec["detail"] = detail
+        try:
+            rec["remote"] = request.remote_addr
+        except RuntimeError:
+            pass
+        line = json.dumps(rec, ensure_ascii=False) + "\n"
+        with open(AUDIT_PATH, "a", encoding="utf-8") as f:
+            f.write(line)
+        try:
+            os.chmod(AUDIT_PATH, 0o600)
+        except OSError:
+            pass
+    except Exception:
+        pass
+
+
+# ---------------------------------------------------------------------------
+# Routes: audit (read-only, never contains values)
+# ---------------------------------------------------------------------------
+@app.get("/api/audit")
+def api_audit():
+    _t, s, err = require_auth()
+    if err:
+        return err
+    n = request.args.get("n", "100")
+    try:
+        n = max(1, min(int(n), AUDIT_MAX_READ))
+    except (TypeError, ValueError):
+        n = 100
+    if not os.path.exists(AUDIT_PATH):
+        return jsonify({"entries": [], "total": 0})
+    try:
+        with open(AUDIT_PATH, "r", encoding="utf-8") as f:
+            lines = f.readlines()
+    except OSError:
+        return jsonify({"entries": [], "total": 0})
+    tail = lines[-n:]
+    out = []
+    for ln in tail:
+        ln = ln.strip()
+        if not ln:
+            continue
+        try:
+            out.append(json.loads(ln))
+        except json.JSONDecodeError:
+            continue
+    return jsonify({"entries": out, "total": len(lines)})
+
+
+# ---------------------------------------------------------------------------
 # Routes: UI
-# --------------------------------------------------------------------------- #
+# ---------------------------------------------------------------------------
 @app.get("/")
 def index():
     initialized = vault_exists()
@@ -334,6 +399,7 @@ def api_setup():
     })
     token, csrf = new_session(key)
     resp = jsonify({"ok": True, "csrf": csrf})
+    audit("setup", "*", "allow", "ok")
     return set_unlock_cookie(resp, token)
 
 
@@ -358,11 +424,13 @@ def api_unlock():
 
     if not ok:
         _record_failure()
+        audit("unlock", "*", "deny", "bad_password")
         return jsonify({"error": "Incorrect master password"}), 401
 
     _record_success()
     token, csrf = new_session(key, remember=remember)
     resp = jsonify({"ok": True, "csrf": csrf})
+    audit("unlock", "*", "allow", "ok")
     return set_unlock_cookie(resp, token, remember=remember)
 
 
@@ -373,6 +441,7 @@ def api_lock():
         return err
     destroy_session(token)
     resp = jsonify({"ok": True})
+    audit("lock", "*", "allow", "ok")
     resp.delete_cookie(COOKIE_NAME, path="/")
     return resp
 
@@ -390,9 +459,11 @@ def api_status():
 def list_entries():
     _t, s, err = require_auth()
     if err:
+        audit("list", "*", "deny", "locked")
         return err
     vault = load_vault()
     names = sorted(vault["entries"].keys())
+    audit("list", "*", "allow", "ok", {"count": len(names)})
     return jsonify({"entries": names})
 
 
@@ -400,14 +471,18 @@ def list_entries():
 def get_entry(name):
     _t, s, err = require_auth()
     if err:
+        audit("get", name, "deny", "locked")
         return err
     e = load_vault()["entries"].get(name)
     if not e:
+        audit("get", name, "deny", "not_found")
         return jsonify({"error": "not found"}), 404
     try:
         value = decrypt(s["key"], bytes.fromhex(e["nonce"]), bytes.fromhex(e["ct"]))
     except Exception:
+        audit("get", name, "deny", "decrypt_failed")
         return jsonify({"error": "decryption failed"}), 500
+    audit("get", name, "allow", "ok")
     return jsonify({"name": name, "value": value.decode("utf-8")})
 
 
@@ -415,6 +490,7 @@ def get_entry(name):
 def put_entry():
     _t, s, err = auth()
     if err:
+        audit("set", (request.json or {}).get("name", "?"), "deny", "auth")
         return err
     data = request.json or {}
     name = (data.get("name") or "").strip()
@@ -423,10 +499,12 @@ def put_entry():
         return jsonify({"error": "name is required"}), 400
     if value is None:
         return jsonify({"error": "value is required"}), 400
-    nonce, ct = encrypt(s["key"], str(value).encode("utf-8"))
     vault = load_vault()
+    created = name not in vault["entries"]
+    nonce, ct = encrypt(s["key"], str(value).encode("utf-8"))
     vault["entries"][name] = {"nonce": nonce.hex(), "ct": ct.hex()}
     save_vault(vault)
+    audit("set", name, "allow", "ok", {"created": created})
     return jsonify({"ok": True, "name": name})
 
 
@@ -434,12 +512,15 @@ def put_entry():
 def delete_entry(name):
     _t, s, err = auth()
     if err:
+        audit("delete", name, "deny", "auth")
         return err
     vault = load_vault()
     if name not in vault["entries"]:
+        audit("delete", name, "deny", "not_found")
         return jsonify({"error": "not found"}), 404
     del vault["entries"][name]
     save_vault(vault)
+    audit("delete", name, "allow", "ok")
     return jsonify({"ok": True})
 
 

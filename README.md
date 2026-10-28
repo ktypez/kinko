@@ -67,11 +67,13 @@ Open the browser, set a master password (≥ 8 chars), add entries. Done.
 
 ```bash
 vaultctl list                      # all entry names
-vaultctl get NOUS_API_KEY          # print a secret to stdout
+vaultctl get NOUS_API_KEY          # print a secret to stdout (trusted shells only)
 vaultctl set MY_TOKEN "abc123"     # create/update
 vaultctl delete MY_TOKEN           # remove
 vaultctl status                    # initialized / unlocked?
 vaultctl lock                      # wipe the session
+vaultctl exec NOUS_API_KEY -- <cmd> [args...]   # inject into child env; value never printed (masked)
+vaultctl audit [N]                 # last N audit records (JSONL, never values)
 ```
 
 Point tools at any vault instance with `VAULT_URL`:
