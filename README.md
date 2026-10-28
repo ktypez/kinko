@@ -82,6 +82,50 @@ Point tools at any vault instance with `VAULT_URL`:
 NOUS_KEY=$(VAULT_URL=http://127.0.0.1:8787 vaultctl get NOUS_API_KEY)
 ```
 
+### Safe consumption with `vaultctl exec`
+
+`vaultctl get` prints the plaintext to stdout — fine for a trusted shell, but
+the value then lands in your agent's context, the transcript, and any log that
+captures command output. **`vaultctl exec` is the safer path:** it resolves the
+value internally, injects it straight into the child process's environment, and
+masks every occurrence (plus any 6+ character fragment) in the child's stdout
+and stderr. The secret never reaches the caller's output.
+
+```bash
+# pass the key to a command without ever printing it
+vaultctl exec NOUS_API_KEY -- my-tool --auth
+
+# override the injected env var name (default: the entry name)
+vaultctl exec NOUS_API_KEY --env AUTH_TOKEN -- my-tool --auth
+
+# inspect only what you need, value stays hidden
+vaultctl exec NOUS_API_KEY -- python3 -c 'import os; print(len(os.environ["NOUS_API_KEY"]))'
+```
+
+The child's exit code is propagated, so `exec` composes like a normal command.
+Prefer `exec` over `get` whenever a secret is consumed by a program rather than
+read by a human.
+
+### Audit trail
+
+Every unlock, list, get, set, and delete is appended to
+`data/audit.jsonl` (mode `0600`) as one JSON object per line — **never the
+secret value**:
+
+```json
+{"ts":"2026-10-28T04:48:56Z","action":"get","name":"NOUS_API_KEY","decision":"allow","reason":"ok","remote":"127.0.0.1"}
+```
+
+```bash
+vaultctl audit 50                  # last 50 records
+curl -s -b ~/.vault-cookie \
+  http://127.0.0.1:8787/api/audit?n=50
+```
+
+The log records the *decision* (allow/deny) and *reason* (e.g. `locked`,
+`not_found`, `bad_password`), so you can spot access attempts without ever
+seeing the secrets behind them.
+
 ### HTTP API
 
 Base URL `http://127.0.0.1:8787`. Mutations require `X-CSRF-Token` (returned
@@ -98,6 +142,7 @@ by `/api/unlock`).
 | `/api/entries`             | POST         | create / update     |
 | `/api/entries/<name>`      | DELETE       | remove one          |
 | `/api/change-password`     | POST         | rotate master pw    |
+| `/api/audit`               | GET          | last N audit records (`?n=N`) |
 
 ## Development & mock mode
 
@@ -156,6 +201,12 @@ journalctl -u kinko -f
   backup system. Restore = drop the file back and restart. Lose both the file
   *and* the password and there is no recovery path.
 - **Sessions are in-memory.** A service restart logs everyone out by design.
+- **Audit log.** `data/audit.jsonl` records every access decision (allow/deny +
+  reason) but never secret values. Inspect with `vaultctl audit` or
+  `/api/audit?n=N`. Rotate/truncate it manually if it grows.
+- **Safe consumption.** Prefer `vaultctl exec` over `vaultctl get` so secrets
+  never enter a shell's stdout, an agent's context, or a transcript. `get`
+  exists for trusted interactive use only.
 
 ## Repository layout
 
@@ -163,8 +214,9 @@ journalctl -u kinko -f
 kinko/
 ├── app.py              # the vault: Flask service + embedded UI (~1,300 lines)
 ├── mock_vault.py       # dev-only mock, identical API shape
+├── vaultctl            # CLI client (audit, exec, get, set, …)
 ├── run.sh / stop.sh    # manual launchers (mock by default)
-├── deploy.sh           # source → service-root sync
+├── deploy.sh           # source → service-root sync (+ installs vaultctl)
 ├── install.sh          # installs the systemd unit
 └── systemd/
     └── kinko.service   # production unit template
