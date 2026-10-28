@@ -18,6 +18,14 @@ rsync -a --delete \
 mkdir -p "$DST/data/logs"
 echo "deployed: $SRC -> $DST"
 
+# Install the vaultctl CLI onto PATH (idempotent).
+if [ -x "$SRC/vaultctl" ]; then
+  install -m 0755 "$SRC/vaultctl" "$HOME/.local/bin/vaultctl"
+  mkdir -p "$HOME/.opencode/bin"
+  ln -sf "$HOME/.local/bin/vaultctl" "$HOME/.opencode/bin/vaultctl"
+  echo "installed: vaultctl -> $HOME/.local/bin/vaultctl"
+fi
+
 # run installer if present
 if [ -x "$DST/install.sh" ]; then
   KINKO_SERVICE_ROOT="$DST" "$DST/install.sh"
