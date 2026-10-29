@@ -1,5 +1,8 @@
 <script>
   import { onMount } from 'svelte';
+  import { fade, fly, scale } from 'svelte/transition';
+  import { flip } from 'svelte/animate';
+  import { quintOut, cubicOut } from 'svelte/easing';
   import { api, getCsrf, setCsrf, clearCsrf } from './lib/api.js';
 
   let theme = $state('light');
@@ -241,7 +244,7 @@
 
 <main>
   {#if !initialized}
-    <section class="auth">
+    <section class="auth" transition:fade={{ duration: 200 }}>
       <div class="card">
         <div class="icon">金</div>
         <h2>Create your vault</h2>
@@ -266,7 +269,7 @@
     </section>
 
   {:else if !unlocked}
-    <section class="auth">
+    <section class="auth" transition:fade={{ duration: 200 }}>
       <div class="card">
         <div class="icon">金</div>
         <h2>Unlock vault</h2>
@@ -285,7 +288,7 @@
     </section>
 
   {:else if route === 'settings'}
-    <section class="page">
+    <section class="page" transition:fade={{ duration: 200 }}>
       <div class="card" style="max-width:720px;margin:0 auto">
         <h2>Settings</h2>
         <p class="sub">Manage your vault configuration and audit history.</p>
@@ -326,7 +329,7 @@
           <div class="label">Audit log (last 100)</div>
           <div class="entries">
             {#each audit as a (a.ts + (a.name || '') + (a.action || ''))}
-              <div class="row">
+              <div class="row" in:fly={{ y: 6, duration: 180 }}>
                 <div class="time">{a.ts}</div>
                 <div class="desc">{a.action} {a.name ? '· ' + a.name : ''} <span class="decision">— {a.decision}{a.reason ? ' (' + a.reason + ')' : ''}</span></div>
               </div>
@@ -342,7 +345,7 @@
     </section>
 
   {:else}
-    <section class="page">
+    <section class="page" transition:fade={{ duration: 200 }}>
       <div class="stats">
         <div class="stat">
           <div class="stat-label">Total entries</div>
@@ -369,7 +372,7 @@
 
       <div class="list">
         {#each filtered as name, i (name)}
-          <div class="row" style="animation-delay:{i * 35}ms">
+          <div class="row" animate:flip={{ duration: 250 }} in:fly={{ y: 8, duration: 200, delay: i * 20 }} out:fade={{ duration: 120 }}>
             <div class="cell">
               <div class="name">{name}</div>
               <div class="value {revealed[name] ? 'show' : ''}">{revealed[name] ? (values[name] ?? '••••••••') : '••••••••'}</div>
@@ -395,8 +398,8 @@
 
 {#if addModalOpen}
   <div class="modal">
-    <div class="backdrop" role="button" tabindex="0" onclick={() => (addModalOpen = false)} onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') addModalOpen = false; }}></div>
-    <div class="card modal-card">
+    <div class="backdrop" role="button" tabindex="0" onclick={() => (addModalOpen = false)} onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') addModalOpen = false; }} transition:fade={{ duration: 150 }}></div>
+    <div class="card modal-card" transition:scale={{ duration: 200, start: 0.96, opacity: 0 }}>
       <div class="vault-head">
         <div class="title">Add / update entry</div>
         <button class="icon" onclick={() => (addModalOpen = false)} title="close">✕</button>
