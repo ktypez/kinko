@@ -221,7 +221,7 @@
 <header class="topbar">
   <div class="inner">
     <div class="brand">
-      <img class="mark" src="/favicon.svg" alt="Kinko" />
+      <span class="seal">金</span>
       <div class="name">Kinko <span class="jp">金庫</span></div>
     </div>
     <div class="actions">
@@ -243,7 +243,7 @@
   {#if !initialized}
     <section class="auth">
       <div class="card">
-        <div class="icon">🔐</div>
+        <div class="icon">金</div>
         <h2>Create your vault</h2>
         <p class="sub">Choose a strong master password. It is never stored — lose it and the data is unrecoverable.</p>
         <div class="field">
@@ -268,7 +268,7 @@
   {:else if !unlocked}
     <section class="auth">
       <div class="card">
-        <div class="icon">🔐</div>
+        <div class="icon">金</div>
         <h2>Unlock vault</h2>
         <p class="sub">Enter your master password to access your credentials.</p>
         <div class="field">
