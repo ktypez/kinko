@@ -218,185 +218,190 @@
   });
 </script>
 
-<header class="utility">
-  <div class="u-inner">
-    <div class="u-brand">
-      <img class="u-mark" src="/favicon.svg" alt="Kinko" />
-      <span class="u-name">Kinko 金庫</span>
+<header class="topbar">
+  <div class="inner">
+    <div class="brand">
+      <img class="mark" src="/favicon.svg" alt="Kinko" />
+      <div class="name">Kinko <span class="jp">金庫</span></div>
     </div>
-    <div class="u-right">
-      <button class="u-link" onclick={toggleTheme} title="toggle theme">{theme === 'dark' ? 'Light' : 'Dark'}</button>
+    <div class="actions">
+      {#if initialized}
+        <span class="status {unlocked ? 'ok' : 'warn'}">
+          <span class="dot"></span>{unlocked ? 'Unlocked' : 'Locked'}
+        </span>
+      {/if}
+      <button class="ghost" onclick={toggleTheme}>{theme === 'dark' ? 'Light' : 'Dark'}</button>
       {#if unlocked}
-        <a class="u-link" href="#/settings">Settings</a>
-        <button class="u-link" onclick={doLock}>Lock</button>
+        <a class="ghost" href="#/settings">Settings</a>
+        <button class="ghost danger" onclick={doLock}>Lock</button>
       {/if}
     </div>
   </div>
-  <nav class="u-subnav">
-    <div class="status-pill {unlocked ? 'unlocked' : initialized ? 'locked' : ''}">
-      <span class="status-dot"></span>
-      <span>{unlocked ? 'unlocked' : initialized ? 'locked' : 'not set'}</span>
-    </div>
-  </nav>
 </header>
 
 <main>
   {#if !initialized}
     <section class="auth">
-      <div class="auth-card">
-        <div class="mark">🔐</div>
+      <div class="card">
+        <div class="icon">🔐</div>
         <h2>Create your vault</h2>
-        <div class="sub">Choose a strong master password. It is never stored — lose it and the data is unrecoverable.</div>
+        <p class="sub">Choose a strong master password. It is never stored — lose it and the data is unrecoverable.</p>
         <div class="field">
           <label for="setupPw">Master password</label>
-          <div class="input-wrap">
+          <div class="wrap">
             <input id="setupPw" type={showSetupPw ? 'text' : 'password'} bind:value={setupPw} class="input" autocomplete="new-password" placeholder="at least 8 characters" />
-            <button type="button" class="pw-toggle" onclick={() => (showSetupPw = !showSetupPw)}>{showSetupPw ? 'hide' : 'show'}</button>
+            <button type="button" class="pw" onclick={() => (showSetupPw = !showSetupPw)}>{showSetupPw ? 'hide' : 'show'}</button>
           </div>
         </div>
         <div class="field">
           <label for="setupPw2">Confirm password</label>
-          <div class="input-wrap">
+          <div class="wrap">
             <input id="setupPw2" type={showSetupPw2 ? 'text' : 'password'} bind:value={setupPw2} class="input" autocomplete="new-password" placeholder="repeat password" />
-            <button type="button" class="pw-toggle" onclick={() => (showSetupPw2 = !showSetupPw2)}>{showSetupPw2 ? 'hide' : 'show'}</button>
+            <button type="button" class="pw" onclick={() => (showSetupPw2 = !showSetupPw2)}>{showSetupPw2 ? 'hide' : 'show'}</button>
           </div>
         </div>
         <button class="btn cta" onclick={doSetup}>Create vault</button>
-        {#if setupErr}<div class="err-msg">{setupErr}</div>{/if}
+        {#if setupErr}<div class="err">{setupErr}</div>{/if}
       </div>
     </section>
+
   {:else if !unlocked}
     <section class="auth">
-      <div class="auth-card">
-        <div class="mark">🔐</div>
+      <div class="card">
+        <div class="icon">🔐</div>
         <h2>Unlock vault</h2>
-        <div class="sub">Enter your master password to access your credentials.</div>
+        <p class="sub">Enter your master password to access your credentials.</p>
         <div class="field">
           <label for="unlockPw">Master password</label>
-          <div class="input-wrap">
+          <div class="wrap">
             <input id="unlockPw" type={showUnlockPw ? 'text' : 'password'} bind:value={unlockPw} class="input" autocomplete="current-password" placeholder="master password" onkeydown={(e) => { if (e.key === 'Enter') doUnlock(); }} />
-            <button type="button" class="pw-toggle" onclick={() => (showUnlockPw = !showUnlockPw)}>{showUnlockPw ? 'hide' : 'show'}</button>
+            <button type="button" class="pw" onclick={() => (showUnlockPw = !showUnlockPw)}>{showUnlockPw ? 'hide' : 'show'}</button>
           </div>
         </div>
         <label class="remember"><input type="checkbox" bind:checked={remember} />Remember me (30 days)</label>
         <button class="btn cta" onclick={doUnlock}>Unlock</button>
-        {#if unlockErr}<div class="err-msg">{unlockErr}</div>{/if}
+        {#if unlockErr}<div class="err">{unlockErr}</div>{/if}
       </div>
     </section>
+
   {:else if route === 'settings'}
-    <section class="plate">
-      <div class="auth-card" style="max-width:620px;margin:0 auto">
-        <div class="mark">🔐</div>
+    <section class="page">
+      <div class="card" style="max-width:720px;margin:0 auto">
         <h2>Settings</h2>
-        <div class="sub">Manage your vault configuration.</div>
+        <p class="sub">Manage your vault configuration and audit history.</p>
 
-        <div class="field" style="margin-top:20px">
-          <label for="cpCur">Current password</label>
-          <div class="input-wrap">
-            <input id="cpCur" type={showCpCur ? 'text' : 'password'} bind:value={cpCur} class="input" placeholder="current password" />
-            <button type="button" class="pw-toggle" onclick={() => (showCpCur = !showCpCur)}>{showCpCur ? 'hide' : 'show'}</button>
-          </div>
-        </div>
-        <div class="field">
-          <label for="cpNew">New password</label>
-          <div class="input-wrap">
-            <input id="cpNew" type={showCpNew ? 'text' : 'password'} bind:value={cpNew} class="input" placeholder="new password" />
-            <button type="button" class="pw-toggle" onclick={() => (showCpNew = !showCpNew)}>{showCpNew ? 'hide' : 'show'}</button>
-          </div>
-        </div>
-        <div class="field">
-          <label for="cpNew2">Confirm new</label>
-          <div class="input-wrap">
-            <input id="cpNew2" type={showCpNew2 ? 'text' : 'password'} bind:value={cpNew2} class="input" placeholder="confirm" />
-            <button type="button" class="pw-toggle" onclick={() => (showCpNew2 = !showCpNew2)}>{showCpNew2 ? 'hide' : 'show'}</button>
-          </div>
-        </div>
-        <button class="btn cta" onclick={changePassword} style="width:100%">Change password</button>
-
-        <div class="label" style="margin:28px 0 12px">Session</div>
-        <p class="muted" style="font-size:13px;margin-bottom:16px">Sessions persist across restarts. Tick "Remember me" on the unlock screen to stay signed in for 30 days.</p>
-        <button class="btn danger" onclick={doLock} style="width:100%">Lock vault</button>
-        <div style="margin-top:14px"><a class="btn ghost sm" href="#/">← Back to vault</a></div>
-
-        <div class="label" style="margin:28px 0 12px">Audit log (last 100)</div>
-        <div class="entries">
-          {#each audit as a (a.ts + (a.name || '') + (a.action || ''))}
-            <div class="entry">
-              <div class="entry-top">
-                <div class="entry-key">{a.ts}</div>
-              </div>
-              <div class="entry-bottom">
-                <div class="entry-val revealed">{a.action} {a.name ? '· ' + a.name : ''} <span class="decision">— {a.decision}{a.reason ? ' (' + a.reason + ')' : ''}</span></div>
-              </div>
+        <div class="section">
+          <div class="label">Change master password</div>
+          <div class="field">
+            <label for="cpCur">Current password</label>
+            <div class="wrap">
+              <input id="cpCur" type={showCpCur ? 'text' : 'password'} bind:value={cpCur} class="input" placeholder="current password" />
+              <button type="button" class="pw" onclick={() => (showCpCur = !showCpCur)}>{showCpCur ? 'hide' : 'show'}</button>
             </div>
-          {/each}
-          {#if audit.length === 0}
-            <div class="empty-state"><div class="ico">📜</div><p>No audit entries.</p></div>
-          {/if}
+          </div>
+          <div class="field">
+            <label for="cpNew">New password</label>
+            <div class="wrap">
+              <input id="cpNew" type={showCpNew ? 'text' : 'password'} bind:value={cpNew} class="input" placeholder="new password" />
+              <button type="button" class="pw" onclick={() => (showCpNew = !showCpNew)}>{showCpNew ? 'hide' : 'show'}</button>
+            </div>
+          </div>
+          <div class="field">
+            <label for="cpNew2">Confirm new</label>
+            <div class="wrap">
+              <input id="cpNew2" type={showCpNew2 ? 'text' : 'password'} bind:value={cpNew2} class="input" placeholder="confirm" />
+              <button type="button" class="pw" onclick={() => (showCpNew2 = !showCpNew2)}>{showCpNew2 ? 'hide' : 'show'}</button>
+            </div>
+          </div>
+          <button class="btn cta" onclick={changePassword} style="width:100%">Change password</button>
         </div>
+
+        <div class="section">
+          <div class="label">Session</div>
+          <p class="muted">Sessions persist across restarts. Tick "Remember me" on the unlock screen to stay signed in for 30 days.</p>
+          <button class="btn danger" onclick={doLock} style="width:100%">Lock vault</button>
+        </div>
+
+        <div class="section">
+          <div class="label">Audit log (last 100)</div>
+          <div class="entries">
+            {#each audit as a (a.ts + (a.name || '') + (a.action || ''))}
+              <div class="row">
+                <div class="time">{a.ts}</div>
+                <div class="desc">{a.action} {a.name ? '· ' + a.name : ''} <span class="decision">— {a.decision}{a.reason ? ' (' + a.reason + ')' : ''}</span></div>
+              </div>
+            {/each}
+            {#if audit.length === 0}
+              <div class="empty"><div class="ico">📜</div><p>No audit entries.</p></div>
+            {/if}
+          </div>
+        </div>
+
+        <div style="margin-top:18px"><a class="btn ghost" href="#/">← Back to vault</a></div>
       </div>
     </section>
+
   {:else}
-    <div class="ticker">
-      <div class="track">
-        <span>AES-256-GCM</span><span class="dot">✦</span><span>PBKDF2 · 600k</span><span class="dot">✦</span><span>LOCALHOST ONLY</span><span class="dot">✦</span><span>ZERO-KNOWLEDGE</span><span class="dot">✦</span><span>SESSION-SAFE</span><span class="dot">✦</span>
-        <span>AES-256-GCM</span><span class="dot">✦</span><span>PBKDF2 · 600k</span><span class="dot">✦</span><span>LOCALHOST ONLY</span><span class="dot">✦</span><span>ZERO-KNOWLEDGE</span><span class="dot">✦</span><span>SESSION-SAFE</span><span class="dot">✦</span>
-      </div>
-    </div>
-    <div class="plate">
-      <div class="plate-head">
-        <div class="eyebrow">MEET THE VAULT</div>
-        <h2>Every key, one encrypted shelf.</h2>
-        <p>Store API keys, tokens, and passwords as named entries. Reveal, copy, or delete on demand — values are decrypted only when you ask.</p>
-      </div>
-      <div class="bordered vault-panel">
-        <div class="vault-head">
-          <div>
-            <div class="title">Entries</div>
-            <div class="sub">{filtered.length} of {entries.length} entries</div>
-          </div>
-          <div class="search-wrap">
-            <input type="text" bind:value={search} class="input" placeholder="search entries…" autocomplete="off" />
-          </div>
-          <button class="btn cta sm" onclick={() => (addModalOpen = true)}>＋ Add entry</button>
+    <section class="page">
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-label">Total entries</div>
+          <div class="stat-value">{entries.length}</div>
         </div>
-        <div class="entries">
-          {#each filtered as name, i (name)}
-            <div class="entry" style="animation-delay:{i * 45}ms">
-              <div class="entry-top">
-                <div class="entry-key">{name}</div>
-              </div>
-              <div class="entry-bottom">
-                <div class="entry-val {revealed[name] ? 'revealed' : ''}">{revealed[name] ? (values[name] ?? '••••••••') : '••••••••'}</div>
-                <div class="entry-actions">
-                  <button class="icon-btn" title={revealed[name] ? 'hide' : 'reveal'} onclick={() => toggleReveal(name)}>{revealed[name] ? '🙈' : '👁'}</button>
-                  <button class="icon-btn" title="copy" disabled={!revealed[name]} onclick={() => copyValue(name)}>⧉</button>
-                  <button class="icon-btn danger" title="delete" onclick={() => deleteEntry(name)}>✕</button>
-                </div>
-              </div>
+        <div class="stat">
+          <div class="stat-label">Revealed now</div>
+          <div class="stat-value">{Object.values(revealed).filter(Boolean).length}</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Status</div>
+          <div class="stat-value small ok">Encrypted · AES‑256</div>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <div class="search">
+          <input type="text" bind:value={search} class="input" placeholder="Search entries…" autocomplete="off" />
+          {#if search}<button class="clear" onclick={() => (search = '')}>✕</button>{/if}
+        </div>
+        <div class="count">{filtered.length} / {entries.length}</div>
+        <button class="btn cta" onclick={() => (addModalOpen = true)}>＋ Add entry</button>
+      </div>
+
+      <div class="list">
+        {#each filtered as name, i (name)}
+          <div class="row" style="animation-delay:{i * 35}ms">
+            <div class="cell">
+              <div class="name">{name}</div>
+              <div class="value {revealed[name] ? 'show' : ''}">{revealed[name] ? (values[name] ?? '••••••••') : '••••••••'}</div>
             </div>
-          {/each}
-        </div>
-        {#if entries.length === 0 || (search.trim() && filtered.length === 0)}
-          <div class="empty-state">
-            <div class="ico">🔐</div>
-            <p>{search.trim() && filtered.length === 0 ? 'No entries match "' + search.trim() + '".' : 'No entries yet. Click "Add entry" to create your first one.'}</p>
+            <div class="actions">
+              <button class="icon" title={revealed[name] ? 'hide' : 'reveal'} onclick={() => toggleReveal(name)}>{revealed[name] ? '🙈' : '👁'}</button>
+              <button class="icon" title="copy" disabled={!revealed[name]} onclick={() => copyValue(name)}>⧉</button>
+              <button class="icon danger" title="delete" onclick={() => deleteEntry(name)}>✕</button>
+            </div>
           </div>
-        {/if}
+        {/each}
       </div>
-    </div>
+
+      {#if entries.length === 0 || (search.trim() && filtered.length === 0)}
+        <div class="empty">
+          <div class="ico">🗄️</div>
+          <p>{search.trim() && filtered.length === 0 ? 'No entries match "' + search.trim() + '".' : 'No entries yet. Click "Add entry" to create your first one.'}</p>
+        </div>
+      {/if}
+    </section>
   {/if}
 </main>
 
 {#if addModalOpen}
   <div class="modal">
-    <div class="modal-backdrop" role="button" tabindex="0" onclick={() => (addModalOpen = false)} onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') addModalOpen = false; }}></div>
-    <div class="modal-card bordered">
+    <div class="backdrop" role="button" tabindex="0" onclick={() => (addModalOpen = false)} onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') addModalOpen = false; }}></div>
+    <div class="card modal-card">
       <div class="vault-head">
         <div class="title">Add / update entry</div>
-        <button class="icon-btn" onclick={() => (addModalOpen = false)} title="close">✕</button>
+        <button class="icon" onclick={() => (addModalOpen = false)} title="close">✕</button>
       </div>
-      <div style="padding:22px">
+      <div class="body">
         <div class="field">
           <label for="newName">Name</label>
           <input id="newName" type="text" bind:value={newName} class="input mono" placeholder="e.g. github_api_key" />
@@ -405,9 +410,9 @@
           <label for="newValue">Value</label>
           <input id="newValue" type="text" bind:value={newValue} class="input mono" placeholder="secret value" />
         </div>
-        <div style="display:flex;gap:10px;margin-top:20px">
-          <button class="btn cta" onclick={saveEntry} style="flex:1">Save entry</button>
-          <button class="btn ghost" onclick={() => (addModalOpen = false)} style="flex:1">Cancel</button>
+        <div class="actions">
+          <button class="btn cta" onclick={saveEntry}>Save entry</button>
+          <button class="btn ghost" onclick={() => (addModalOpen = false)}>Cancel</button>
         </div>
       </div>
     </div>
