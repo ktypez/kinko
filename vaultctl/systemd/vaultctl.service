@@ -1,5 +1,5 @@
 [Unit]
-Description=Kinko 金庫 (credentials vault)
+Description=Vaultctl (credentials vault)
 After=network.target
 
 [Service]

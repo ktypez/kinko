@@ -15,7 +15,17 @@ PBKDF2-derived keys, nothing leaves your machine.
 
 ---
 
-## Why Kinko?
+## Repository layout
+
+This is a monorepo with two components:
+
+- `vaultctl/` — **credentials vault backend** (Flask API, encrypted store, `vaultctl` CLI). Service: `vaultctl.service` on `:8787`.
+- `kinko/` — **web UI frontend** (Svelte + Vite SPA, served via `serve.py`). Service: `kinko.service` on `:8788` (proxies `/api/*` to vaultctl).
+
+The frontend talks to the backend through relative `/api/*` (proxied in dev by Vite, in prod by `serve.py`).
+
+---
+
 
 You have secrets scattered across `.env` files, shell history, and browser
 password managers. Cloud secret managers need accounts, billing, and trust in
