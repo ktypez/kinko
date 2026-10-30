@@ -159,18 +159,23 @@
       } else {
         const ta = document.createElement('textarea');
         ta.value = value;
-        ta.style.position = 'fixed';
-        ta.style.opacity = '0';
+        ta.setAttribute('readonly', '');
+        ta.style.position = 'absolute';
+        ta.style.left = '-9999px';
+        ta.style.top = '0';
         document.body.appendChild(ta);
         ta.focus();
         ta.select();
+        ta.setSelectionRange(0, value.length);
         const ok = document.execCommand('copy');
         document.body.removeChild(ta);
         if (!ok) throw new Error('execCommand returned false');
       }
       showToast('copied to clipboard', 'ok');
     } catch (e) {
-      showToast('copy failed', 'err');
+      // Last resort: let the user copy manually
+      try { window.prompt('Copy this value:', value); } catch (_) { /* ignore */ }
+      showToast('copy failed — value shown for manual copy', 'err');
     }
   }
 
